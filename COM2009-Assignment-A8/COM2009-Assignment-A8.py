@@ -8,6 +8,7 @@ import os
 import sys
 import time
 import ev3dev.ev3 as ev3
+import math
 
 # state constants
 ON = True
@@ -58,45 +59,67 @@ def main():
     debug_print('Hello VS Code!')
 
     # announce program start
-    ev3.Sound.speak('Test program starting!').wait()
+   # ev3.Sound.speak('Test program starting!').wait()
 
     # set the motor variables
     mb = ev3.LargeMotor('outB')
     mc = ev3.LargeMotor('outC')
     sp = -25
+    diff = -25
 
     # set the ultrasonic sensor variable
     us3 = ev3.UltrasonicSensor('in3')
-
-    # program loop
-    for x in range (1, 5):
-        
-        # fetch the distance
-        ds = us3.value()
-            
-        # display the distance on the screen of the device
-        print('Distance =',ds)
-
-        # print the distance to the output panel in VS Code
-        debug_print('Distance =',ds)
-        
-        # announce the distance
-        ev3.Sound.speak(ds).wait()
-
-        # move
-        mb.run_direct(duty_cycle_sp=sp)
-        mc.run_direct(duty_cycle_sp=sp)
-        time.sleep(1)
-
-        # stop
-        mb.run_direct(duty_cycle_sp=0)
-        mc.run_direct(duty_cycle_sp=0)
-        
-        # reverse direction
-        sp = -sp
+    for i in range (0, 10):
+        ds = []
+        total = 0
+        for j in range (0,10):
+            dis = us3.value()
+            debug_print('dis=',dis)
+            ds.append(dis)
+            total+=dis
+        dsmin = min(ds)
+        dsmax = max(ds)
+        dsmean =total/10
+        dsVar = 0
+        for val in ds:
+            dsVar += pow((val-dsmean),2)
+        dsStdDev= math.sqrt(dsVar)
+        debug_print('min ',i, " = ", dsmin)
+        debug_print('max ', i, " = ",dsmax)
+        debug_print('mean ',i, " = ",dsmean)
+        debug_print('standard deviation ', i, ' = ', dsStdDev)
+         
     
-    # announce program end
-    ev3.Sound.speak('Test program ending').wait()
+    # program loop
+    # for x in range (1, 5):
+        
+    #     # fetch the distance
+    #     ds = us3.value()
+            
+    #     # display the distance on the screen of the device
+    #     print('Distance =',ds)
+
+    #     # print the distance to the output panel in VS Code
+    #     debug_print('Distance =',ds)
+        
+    #     # announce the distance
+         #   ev3.Sound.speak(ds)
+
+    #     # move
+    #     mb.run_direct(duty_cycle_sp=sp-diff)
+    #     mc.run_direct(duty_cycle_sp=sp+diff)
+    #     time.sleep(1)
+
+    #     # stop
+    #     mb.run_direct(duty_cycle_sp=0)
+    #     mc.run_direct(duty_cycle_sp=0)
+        
+    #     # reverse direction
+    #     sp = -sp
+    #     diff = -diff
+    
+    # # announce program end
+    # ev3.Sound.speak('Test program ending').wait()
 
 if __name__ == '__main__':
     main()
