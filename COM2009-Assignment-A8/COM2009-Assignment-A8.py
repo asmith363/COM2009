@@ -69,26 +69,35 @@ def main():
 
     # set the ultrasonic sensor variable
     us3 = ev3.UltrasonicSensor('in3')
+
+    #Code for Q2, take sample of distance every 10 msec and work out mean,min,max,standard deviation  
     for i in range (0, 10):
+        #Time loop begins
         ds = []
         total = 0
-        for j in range (0,10):
+        #Take 1000 samples 
+        for j in range (0,1000):
+            starttime = time.time()
             dis = us3.value()
-            debug_print('dis=',dis)
             ds.append(dis)
             total+=dis
+            if j < 0:
+                time.sleep(.01 - (time.time()-starttime))
+        #work out min, max, mean, and standard deviation
         dsmin = min(ds)
         dsmax = max(ds)
-        dsmean =total/10
+        dsmean =total/1000
         dsVar = 0
         for val in ds:
-            dsVar += pow((val-dsmean),2)
-        dsStdDev= math.sqrt(dsVar)
+            dsVar += pow(abs(val-dsmean),2)
+        dsStdDev= math.sqrt(dsVar/1000)
+        #print min, max, mean, and standard deviation
         debug_print('min ',i, " = ", dsmin)
         debug_print('max ', i, " = ",dsmax)
         debug_print('mean ',i, " = ",dsmean)
         debug_print('standard deviation ', i, ' = ', dsStdDev)
-         
+        #work out how long the function took and calcualte how much delat is needed for 10ms loop.
+        
     
     # program loop
     # for x in range (1, 5):
