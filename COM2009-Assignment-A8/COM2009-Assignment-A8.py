@@ -9,7 +9,6 @@ import sys
 import time
 import ev3dev.ev3 as ev3
 import math
-
 # state constants
 ON = True
 OFF = False
@@ -43,34 +42,27 @@ def set_font(name):
     '''
     os.system('setfont ' + name)
 
+def pid_controller(mb, mc, us3):
+    #pid controller 
+    sp = 25
+    Kp = 1
+    Ki = 0
+    Kd = 0
+    goal = 50
+    integral = 0
+    lastError = 0
+    derivative = 0
+    while True:
+        error = us3.value() - goal
+        integral = integral + error
+        derivative = error - lastError
+        move = (Kp * error) + (Ki * integral) + (Kd * derivative)
+        mb.run_direct(duty_cycle_sp=sp*move)
+        mc.run_direct(duty_cycle_sp=sp*move)
+        lastError = error
 
-def main():
-    '''The main function of our program'''
-
-    # set the console just how we want it
-    reset_console()
-    set_cursor(OFF)
-    set_font('Lat15-Terminus24x12')
-
-    # display something on the screen of the device
-    print('Hello World!')
-
-    # print something to the output panel in VS Code
-    debug_print('Hello VS Code!')
-
-    # announce program start
-   # ev3.Sound.speak('Test program starting!').wait()
-
-    # set the motor variables
-    mb = ev3.LargeMotor('outB')
-    mc = ev3.LargeMotor('outC')
-    sp = -25
-    diff = -25
-
-    # set the ultrasonic sensor variable
-    us3 = ev3.UltrasonicSensor('in3')
-
-    #Code for Q2, take sample of distance every 10 msec and work out mean,min,max,standard deviation  
+def measure_distance():
+ #Code for Q2, take sample of distance every 10 msec and work out mean,min,max,standard deviation  
     for i in range (0, 10):
         #Time loop begins
         ds = []
@@ -98,8 +90,72 @@ def main():
         debug_print('standard deviation ', i, ' = ', dsStdDev)
         #work out how long the function took and calcualte how much delat is needed for 10ms loop.
         
-    
-    # program loop
+
+
+def main():
+    '''The main function of our program'''
+    # set the console just how we want it
+    reset_console()
+    set_cursor(OFF)
+    set_font('Lat15-Terminus24x12')
+
+    # display something on the screen of the device
+    print('Hello World!')
+
+    # print something to the output panel in VS Code
+    debug_print('Hello VS Code!')
+
+    # announce program start
+   # ev3.Sound.speak('Test program starting!').wait()
+
+    # set the motor variables
+    mb = ev3.LargeMotor('outB')
+    mc = ev3.LargeMotor('outC')
+    sp = -25
+    diff = -25
+
+    # set the ultrasonic sensor variable
+    us3 = ev3.UltrasonicSensor('in3')
+     #pid controller 
+    sp = 25
+    Kp = 5 * 100
+    Ki = 0 * 100
+    Kd = 0 * 100
+    goal = 500
+    integral = 0
+    lastError = 0
+    derivative = 0
+    delay = 10
+    while True:
+        starttime = time.time()
+        error = us3.value() - goal
+        integral = (2*integral)/3 + error
+        derivative = error - lastError
+        move = (Kp * error) + (Ki * integral) + (Kd * derivative)
+        move = move/100
+        if move == 0:
+            mb.run_direct(duty_cycle_sp=0)
+            mc.run_direct(duty_cycle_sp=0)
+        elif -35 < move < 35 :
+            mb.run_direct(duty_cycle_sp= move)
+            mc.run_direct(duty_cycle_sp= move)
+        elif move > 0:
+            mb.run_direct(duty_cycle_sp=sp)
+            mc.run_direct(duty_cycle_sp=sp)
+        else:
+            mb.run_direct(duty_cycle_sp=-sp)
+            mc.run_direct(duty_cycle_sp=-sp)
+        lastError = error
+        delay -= (time.time()-starttime)
+        if delay <= 0:
+            if goal == 500:
+                goal = 300
+            else :
+                goal = 500
+            debug_print(goal)
+            delay = 10
+
+    # #program loop
     # for x in range (1, 5):
         
     #     # fetch the distance
@@ -112,7 +168,7 @@ def main():
     #     debug_print('Distance =',ds)
         
     #     # announce the distance
-         #   ev3.Sound.speak(ds)
+    #        ev3.Sound.speak(ds)
 
     #     # move
     #     mb.run_direct(duty_cycle_sp=sp-diff)
