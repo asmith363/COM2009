@@ -42,33 +42,14 @@ def set_font(name):
     '''
     os.system('setfont ' + name)
 
-def pid_controller(mb, mc, us3):
-    #pid controller 
-    sp = 25
-    Kp = 1
-    Ki = 0
-    Kd = 0
-    goal = 50
-    integral = 0
-    lastError = 0
-    derivative = 0
-    while True:
-        error = us3.value() - goal
-        integral = integral + error
-        derivative = error - lastError
-        move = (Kp * error) + (Ki * integral) + (Kd * derivative)
-        mb.run_direct(duty_cycle_sp=sp*move)
-        mc.run_direct(duty_cycle_sp=sp*move)
-        lastError = error
-
-def measure_distance():
+def measure_distance(us3, samples):
  #Code for Q2, take sample of distance every 10 msec and work out mean,min,max,standard deviation  
     for i in range (0, 10):
         #Time loop begins
         ds = []
         total = 0
         #Take 1000 samples 
-        for j in range (0,1000):
+        for j in range (0,samples):
             starttime = time.time()
             dis = us3.value()
             ds.append(dis)
@@ -78,18 +59,15 @@ def measure_distance():
         #work out min, max, mean, and standard deviation
         dsmin = min(ds)
         dsmax = max(ds)
-        dsmean =total/1000
+        dsmean =total/samples
         dsVar = 0
         for val in ds:
             dsVar += pow(abs(val-dsmean),2)
-        dsStdDev= math.sqrt(dsVar/1000)
+        dsStdDev= math.sqrt(dsVar/samples)
         #print min, max, mean, and standard deviation
-        debug_print('min ',i, " = ", dsmin)
-        debug_print('max ', i, " = ",dsmax)
         debug_print('mean ',i, " = ",dsmean)
-        debug_print('standard deviation ', i, ' = ', dsStdDev)
         #work out how long the function took and calcualte how much delat is needed for 10ms loop.
-        
+        return dsmean
 
 
 def main():
@@ -117,8 +95,8 @@ def main():
     # set the ultrasonic sensor variable
     us3 = ev3.UltrasonicSensor('in3')
      #pid controller 
-    sp = 25
-    Kp = 5 * 100
+    sp = -25
+    Kp = 1 * 100
     Ki = 0 * 100
     Kd = 0 * 100
     goal = 500
@@ -128,31 +106,33 @@ def main():
     delay = 10
     while True:
         starttime = time.time()
-        error = us3.value() - goal
+        dis = measure_distance(us3, 500)
+        error = dis - goal
+        if (math.copysign(1, lastError) != math.copysign(1, error)):
+            integral = 0
         integral = (2*integral)/3 + error
         derivative = error - lastError
         move = (Kp * error) + (Ki * integral) + (Kd * derivative)
-        move = move/100
-        if move == 0:
+        move = move  / 100
+        if dis == goal:
             mb.run_direct(duty_cycle_sp=0)
             mc.run_direct(duty_cycle_sp=0)
-        elif -35 < move < 35 :
+        elif -25 <= move <= 25:
             mb.run_direct(duty_cycle_sp= move)
             mc.run_direct(duty_cycle_sp= move)
-        elif move > 0:
-            mb.run_direct(duty_cycle_sp=sp)
-            mc.run_direct(duty_cycle_sp=sp)
-        else:
-            mb.run_direct(duty_cycle_sp=-sp)
-            mc.run_direct(duty_cycle_sp=-sp)
+        elif move > 25 or move < -25:
+            mb.run_direct(duty_cycle_sp=math.copysign(1, move)*sp)
+            mc.run_direct(duty_cycle_sp=math.copysign(1, move)*sp)
         lastError = error
+        debug_print("goal", goal, "dis", dis, "us3", us3.value(), "error: ", error, "last error:" , lastError, "integral: ", integral, "derivative: ", derivative, " move: ", move)
         delay -= (time.time()-starttime)
         if delay <= 0:
             if goal == 500:
-                goal = 300
+                goal = 300 
             else :
                 goal = 500
-            debug_print(goal)
+            integral = 0
+            derivative = 0    
             delay = 10
 
     # #program loop
