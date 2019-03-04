@@ -42,32 +42,21 @@ def set_font(name):
     '''
     os.system('setfont ' + name)
 
-def measure_distance(us3, samples):
+def measure_distance(us3, sleep):
  #Code for Q2, take sample of distance every 10 msec and work out mean,min,max,standard deviation  
-    for i in range (0, 10):
-        #Time loop begins
-        ds = []
-        total = 0
-        #Take 1000 samples 
-        for j in range (0,samples):
-            starttime = time.time()
-            dis = us3.value()
-            ds.append(dis)
-            total+=dis
-            if j < 0:
-                time.sleep(.01 - (time.time()-starttime))
-        #work out min, max, mean, and standard deviation
-        dsmin = min(ds)
-        dsmax = max(ds)
-        dsmean =total/samples
-        dsVar = 0
-        for val in ds:
-            dsVar += pow(abs(val-dsmean),2)
-        dsStdDev= math.sqrt(dsVar/samples)
-        #print min, max, mean, and standard deviation
-        debug_print('mean ',i, " = ",dsmean)
-        #work out how long the function took and calcualte how much delat is needed for 10ms loop.
-        return dsmean
+    #Time loop begins
+    total = 0
+    #Take 1000 samples 
+    for j in range (0,100):
+        starttime = time.time()
+        dis = us3.value()
+        total+=dis
+        if j < 0:
+            time.sleep(sleep - (time.time()-starttime))
+    #work out min, max, mean, and standard deviation
+    dsmean =total/100
+    #work out how long the function took and calcualte how much delat is needed for 10ms loop.
+    return dsmean
 
 
 def main():
@@ -96,75 +85,55 @@ def main():
     us3 = ev3.UltrasonicSensor('in3')
      #pid controller 
     sp = -25
-    Kp = 1 * 100
+    Kp = 2.5  * 100
     Ki = 0 * 100
     Kd = 0 * 100
-    goal = 500
+    goal = 100
     integral = 0
     lastError = 0
     derivative = 0
     delay = 10
+    dT= 0.001
     while True:
         starttime = time.time()
-        dis = measure_distance(us3, 500)
+        #take 500 samples over 5 seconds
+        dis = measure_distance(us3, dT)
         error = dis - goal
+        #set integral to 0 when error changes sign
         if (math.copysign(1, lastError) != math.copysign(1, error)):
             integral = 0
-        integral = (2*integral)/3 + error
+        #dampen the integral
+        integral = (2*integral)/3 + error*(dT)
         derivative = error - lastError
-        move = (Kp * error) + (Ki * integral) + (Kd * derivative)
+        move = (Kp * error) + (Ki * integral) + (Kd * derivative/dT)
         move = move  / 100
-        if dis == goal:
-            mb.run_direct(duty_cycle_sp=0)
-            mc.run_direct(duty_cycle_sp=0)
-        elif -25 <= move <= 25:
-            mb.run_direct(duty_cycle_sp= move)
-            mc.run_direct(duty_cycle_sp= move)
-        elif move > 25 or move < -25:
-            mb.run_direct(duty_cycle_sp=math.copysign(1, move)*sp)
-            mc.run_direct(duty_cycle_sp=math.copysign(1, move)*sp)
+        if move > 25:
+            move = 25
+        if move < -25:
+            move = -25
+        mb.run_direct(duty_cycle_sp= +move)
+        mc.run_direct(duty_cycle_sp= -move)
+        # if dis == goal:
+        #     mb.run_direct(duty_cycle_sp=0)
+        #     mc.run_direct(duty_cycle_sp=0)
+        # elif -25 <= move <= 25:
+        #     mb.run_direct(duty_cycle_sp= move)
+        #     mc.run_direct(duty_cycle_sp= move)
+        # elif move > 25 or move < -25:
+        #     mb.run_direct(duty_cycle_sp=math.copysign(1, move)*sp)
+        #     mc.run_direct(duty_cycle_sp=math.copysign(1, move)*sp)
         lastError = error
         debug_print("goal", goal, "dis", dis, "us3", us3.value(), "error: ", error, "last error:" , lastError, "integral: ", integral, "derivative: ", derivative, " move: ", move)
         delay -= (time.time()-starttime)
         if delay <= 0:
-            if goal == 500:
-                goal = 300 
+            if goal == 150:
+                goal = 100 
             else :
-                goal = 500
+                goal = 150
             integral = 0
             derivative = 0    
             delay = 10
 
-    # #program loop
-    # for x in range (1, 5):
-        
-    #     # fetch the distance
-    #     ds = us3.value()
-            
-    #     # display the distance on the screen of the device
-    #     print('Distance =',ds)
-
-    #     # print the distance to the output panel in VS Code
-    #     debug_print('Distance =',ds)
-        
-    #     # announce the distance
-    #        ev3.Sound.speak(ds)
-
-    #     # move
-    #     mb.run_direct(duty_cycle_sp=sp-diff)
-    #     mc.run_direct(duty_cycle_sp=sp+diff)
-    #     time.sleep(1)
-
-    #     # stop
-    #     mb.run_direct(duty_cycle_sp=0)
-    #     mc.run_direct(duty_cycle_sp=0)
-        
-    #     # reverse direction
-    #     sp = -sp
-    #     diff = -diff
-    
-    # # announce program end
-    # ev3.Sound.speak('Test program ending').wait()
 
 if __name__ == '__main__':
     main()
