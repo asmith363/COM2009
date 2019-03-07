@@ -42,19 +42,19 @@ def set_font(name):
     '''
     os.system('setfont ' + name)
 
-def measure_distance(us3, sleep):
+def measure_distance(us3):
  #Code for Q2, take sample of distance every 10 msec and work out mean,min,max,standard deviation  
     #Time loop begins
     total = 0
     #Take 1000 samples 
-    for j in range (0,100):
+    for j in range (0,10):
         starttime = time.time()
         dis = us3.value()
         total+=dis
         if j < 0:
-            time.sleep(sleep - (time.time()-starttime))
+            time.sleep(0.001 - (time.time()-starttime))
     #work out min, max, mean, and standard deviation
-    dsmean =total/100
+    dsmean =total/10
     #work out how long the function took and calcualte how much delat is needed for 10ms loop.
     return dsmean
 
@@ -78,41 +78,36 @@ def main():
     # set the motor variables
     mb = ev3.LargeMotor('outB')
     mc = ev3.LargeMotor('outC')
-    sp = -25
-    diff = -25
-
     # set the ultrasonic sensor variable
     us3 = ev3.UltrasonicSensor('in3')
      #pid controller 
-    sp = -25
-    Kp = 2.5  * 100
-    Ki = 0 * 100
-    Kd = 0 * 100
+    Kp = 4 * 100
+    Ki = 0* 100
+    Kd = 00 * 100
     goal = 100
     integral = 0
     lastError = 0
     derivative = 0
     delay = 10
-    dT= 0.001
+    dT= 0.1
     while True:
         starttime = time.time()
-        #take 500 samples over 5 seconds
-        dis = measure_distance(us3, dT)
+        #take 100 samples over 1 second
+        dis = measure_distance(us3)
         error = dis - goal
         #set integral to 0 when error changes sign
         if (math.copysign(1, lastError) != math.copysign(1, error)):
             integral = 0
-        #dampen the integral
-        integral = (2*integral)/3 + error*(dT)
+        integral = ((2*integral)/3) + error
         derivative = error - lastError
-        move = (Kp * error) + (Ki * integral) + (Kd * derivative/dT)
+        move = (Kp * error) + (Ki * integral * dT) + (Kd * derivative/dT)
         move = move  / 100
         if move > 25:
             move = 25
         if move < -25:
             move = -25
-        mb.run_direct(duty_cycle_sp= +move)
-        mc.run_direct(duty_cycle_sp= -move)
+        mb.run_direct(duty_cycle_sp= -move)
+        mc.run_direct(duty_cycle_sp= +move)
         # if dis == goal:
         #     mb.run_direct(duty_cycle_sp=0)
         #     mc.run_direct(duty_cycle_sp=0)
@@ -124,12 +119,13 @@ def main():
         #     mc.run_direct(duty_cycle_sp=math.copysign(1, move)*sp)
         lastError = error
         debug_print("goal", goal, "dis", dis, "us3", us3.value(), "error: ", error, "last error:" , lastError, "integral: ", integral, "derivative: ", derivative, " move: ", move)
+        time.sleep(dT - (time.time() - starttime))
         delay -= (time.time()-starttime)
         if delay <= 0:
-            if goal == 150:
-                goal = 100 
+            if goal == 100:
+                goal = 200 
             else :
-                goal = 150
+                goal = 100
             integral = 0
             derivative = 0    
             delay = 10
