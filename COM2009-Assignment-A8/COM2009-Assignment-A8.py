@@ -51,12 +51,12 @@ def measure_distance(us3):
     total = 0
     #Take 10 samples 
     for j in range (0,10):
-        starttime = time.time()
+        start_time = time.time()
         dis = us3.value()
         total+=dis
         if j < 0:
             #sleep for 1ms
-            time.sleep(0.001 - (time.time()-starttime))
+            time.sleep(0.001 - (time.time()-start_time))
     #work out mean and return it
     dsmean =total/10
     return dsmean
@@ -91,22 +91,22 @@ def main():
     Kd = 0.234375 * 100
     #Initialise integral and last error/goal
     integral = 0
-    lastError = 0
-    lastGoal = 0
+    last_error = 0
+    last_goal = 0
     derivative = 0
     #set dT time and base speed
     dT= 0.2
     sp = 50
     #Run PID controller indefinitely
     while True:
-        starttime = time.time()
+        start_time = time.time()
         #pid controller 
         right_dis = measure_distance(us2)
         left_dis = measure_distance(us3)
         goal = (left_dis + right_dis) / 2
        
         #If the goals is different to last goal then reset integral and derivative
-        if goal != lastGoal:   
+        if goal != last_goal:   
             integral = 0
             derivative = 0  
         
@@ -114,11 +114,11 @@ def main():
         dis = left_dis
         error = dis - goal
         #set integral to 0 when error changes sign
-        if (math.copysign(1, lastError) != math.copysign(1, error)):
+        if (math.copysign(1, last_error) != math.copysign(1, error)):
             integral = 0
         #dampen and calculate new integral and derivative
         integral = ((2*integral)/3) + error
-        derivative = error - lastError
+        derivative = error - last_error
 
         #Calculate move control (PID)
         move = (Kp * error) + (Ki * integral * dT) + (Kd * derivative/dT)
@@ -132,12 +132,10 @@ def main():
         mb.run_direct(duty_cycle_sp= sp+move)
         mc.run_direct(duty_cycle_sp= sp-move)
         #set last error and goal
-        lastError = error
-        lastGoal = goal
+        last_error = error
+        last_goal = goal
         #sleep for time dT
-        time.sleep(dT - (time.time() - starttime))
-          
-
+        time.sleep(dT - (time.time() - start_time))
 
 if __name__ == '__main__':
     main()
