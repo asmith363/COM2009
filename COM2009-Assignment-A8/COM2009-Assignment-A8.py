@@ -48,7 +48,6 @@ def measure_distance(us3):
         This function takes 10 distance samples and averages them.
         It the returns the average distance.
     """
-    #Time loop begins
     total = 0
     #Take 10 samples 
     for j in range (0,10):
@@ -56,10 +55,10 @@ def measure_distance(us3):
         dis = us3.value()
         total+=dis
         if j < 0:
+            #sleep for 1ms
             time.sleep(0.001 - (time.time()-starttime))
-    #work out min, max, mean, and standard deviation
+    #work out mean and return it
     dsmean =total/10
-    #work out how long the function took and calcualte how much delat is needed for 10ms loop.
     return dsmean
 
     
